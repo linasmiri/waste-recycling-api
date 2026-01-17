@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: waste-recycling-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/code/logs
+      - ./waste_app.db:/code/waste_app.db
+      - ./app:/code/app  # Mount app directory for hot reload
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - DATABASE_URL=sqlite:///./waste_app.db
+    restart: unless-stopped
+    networks:
+      - waste-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  waste-network:
+    driver: bridge

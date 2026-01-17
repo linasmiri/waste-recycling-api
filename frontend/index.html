@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoCycle - Waste Optimization Platform</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+    <style>
+        body { font-family: "Poppins", sans-serif; scroll-behavior: smooth; }
+        .hero-bg {
+            background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7)),
+            url("https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=1950&q=80");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .glass-card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: transform 0.3s ease;
+        }
+        .glass-card:hover { transform: translateY(-5px); }
+        .nav-link { position: relative; }
+        .nav-link::after {
+            content: "";
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background-color: #10B981;
+            transition: width 0.3s;
+        }
+        .nav-link:hover::after { width: 100%; }
+        .gradient-text {
+            background: linear-gradient(to right, #10B981, #3B82F6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .custom-loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #10B981;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+
+<!-- NAVBAR -->
+<nav class="fixed w-full z-50 bg-white/90 backdrop-blur-md shadow-sm" id="navbar">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+        <a href="#" class="text-2xl font-bold flex items-center text-green-600">
+            <i class="fas fa-recycle mr-2"></i> EcoCycle
+        </a>
+        <div class="hidden md:flex space-x-8 items-center">
+            <a href="#home" class="nav-link font-medium hover:text-green-600">Home</a>
+            <a href="#features" class="nav-link font-medium hover:text-green-600">Services</a>
+            <a href="#about" class="nav-link font-medium hover:text-green-600">About</a>
+
+            <button onclick="openModal('loginModal')" id="loginBtnNav"
+                class="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 shadow-lg">
+                Login
+            </button>
+
+            <div id="userProfileNav" class="hidden flex items-center space-x-3">
+                <span class="font-bold text-green-800" id="navUsername">User</span>
+                <button onclick="logout()" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- HERO -->
+<header id="home" class="hero-bg h-screen flex items-center justify-center text-center px-4 relative">
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent to-gray-50/20"></div>
+
+    <div class="max-w-4xl z-10 animate__animated animate__fadeInUp">
+        <span class="inline-block py-1 px-3 rounded-full bg-green-50/20 text-green-300 text-sm font-semibold mb-4 border border-green-400/30">
+            The Future of Recycling
+        </span>
+
+        <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+            Transform <span class="text-green-400">Waste</span><br>
+            into <span class="text-blue-400">Resources</span>
+        </h1>
+
+        <p class="text-xl text-gray-200 mb-10 max-w-2xl mx-auto">
+            The intelligent platform that connects citizens and collectors ("Barbecha")
+            for a cleaner city and a circular economy.
+        </p>
+
+        <div class="flex flex-col md:flex-row justify-center gap-4">
+            <button onclick="scrollToSection('citizen-section')"
+                class="bg-white text-green-600 px-8 py-4 rounded-full font-bold hover:bg-gray-100">
+                <i class="fas fa-search"></i> I am a Citizen
+            </button>
+
+            <button onclick="openModal('registerModal')" id="heroRegisterBtn"
+                class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-full font-bold">
+                <i class="fas fa-user-plus"></i> Join the Collectors
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- CONTENU -->
+<main class="container mx-auto px-6 py-20">
+
+<section id="citizen-section" class="mb-32">
+    <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold mb-4">
+            For <span class="gradient-text">Citizens</span>
+        </h2>
+        <p class="text-gray-600 max-w-xl mx-auto">
+            Don't throw things away anywhere. Instantly find out how to recycle your items.
+        </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div class="glass-card p-8 animate__animated animate__fadeInLeft">
+            <h3 class="text-2xl font-bold mb-6 flex items-center"><i class="fas fa-magic text-purple-500 mr-3"></i> AI Sorting Assistant</h3>
+            <div class="relative">
+                <input type="text" id="searchItem" placeholder="Plastic bottle, cardboard..." 
+                    class="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-100 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition bg-gray-50">
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <button onclick="search()" class="absolute right-2 top-2 bottom-2 bg-green-600 text-white px-6 rounded-lg hover:bg-green-700 transition">
+                    Find
+                </button>
+            </div>
+            <div id="searchLoader" class="custom-loader mt-4"></div>
+            <div id="searchResult" class="mt-6 hidden p-4 rounded-lg bg-green-50 border border-green-100 text-green-800"></div>
+        </div>
+
+        <div class="relative group">
+            <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-green-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+            <div class="glass-card p-8 h-full relative bg-white">
+                <h3 class="text-2xl font-bold mb-6 flex items-center"><i class="fas fa-map-marker-alt text-red-500 mr-3"></i> Drop-off Points</h3>
+                <p class="text-gray-600 mb-6">Find the nearest bins and recycling centers to your current location.</p>
+                <div class="flex gap-4 mb-4">
+                    <input type="number" id="lat" placeholder="Lat" class="w-1/2 p-3 rounded-lg border bg-gray-50" value="36.8065">
+                    <input type="number" id="lon" placeholder="Lon" class="w-1/2 p-3 rounded-lg border bg-gray-50" value="10.1815">
+                </div>
+                <button onclick="findDropOff()" class="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-location-arrow"></i> Locate
+                </button>
+                <div id="dropOffResult" class="mt-4 space-y-2"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="features" class="mb-32 relative">
+    <div class="absolute top-0 right-0 -z-10 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+    <div class="absolute top-0 left-0 -z-10 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+
+    <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold mb-4">
+            <span class="gradient-text">Barbecha</span> Space
+        </h2>
+        <p class="text-gray-600">
+            Manage your collections, track your earnings and optimize your routes.
+        </p>
+    </div>
+
+    <div id="dashboardLocked" class="text-center py-12 bg-white rounded-3xl shadow-xl max-w-4xl mx-auto">
+        <h3 class="text-2xl font-bold mb-4">Access Reserved for Collectors</h3>
+        <p class="mb-8 text-gray-500">
+            Log in to access the dashboard and manage your transactions.
+        </p>
+        <button onclick="openModal('loginModal')" class="bg-green-600 text-white px-8 py-3 rounded-full">
+            Log In
+        </button>
+    </div>
+
+    <!-- UNLOCKED DASHBOARD -->
+    <div id="dashboardUnlocked" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+             <!-- Stat Card 1 -->
+             <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center">
+                <div class="p-4 rounded-xl bg-green-100 text-green-600 mr-4"><i class="fas fa-wallet text-2xl"></i></div>
+                <div>
+                    <p class="text-sm text-gray-500">Current Balance</p>
+                    <h4 class="text-2xl font-bold" id="dashBalance">0.0 TND</h4>
+                </div>
+             </div>
+             <!-- Stat Card 2 -->
+             <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center">
+                <div class="p-4 rounded-xl bg-blue-100 text-blue-600 mr-4"><i class="fas fa-weight-hanging text-2xl"></i></div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Collected</p>
+                    <h4 class="text-2xl font-bold">1,240 kg</h4>
+                </div>
+             </div>
+             <!-- Stat Card 3 -->
+             <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center">
+                <div class="p-4 rounded-xl bg-purple-100 text-purple-600 mr-4"><i class="fas fa-star text-2xl"></i></div>
+                <div>
+                    <p class="text-sm text-gray-500">Reputation</p>
+                    <h4 class="text-2xl font-bold">Excellent</h4>
+                </div>
+             </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+            <!-- Declaration Form -->
+            <div class="glass-card p-8">
+                <h3 class="text-xl font-bold mb-6">New Collection</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Material Type</label>
+                        <select id="material" class="w-full p-3 rounded-lg border bg-gray-50 focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="Plastic">Plastic (PET/HDPE)</option>
+                            <option value="Metal">Metal / Scrap</option>
+                            <option value="Paper">Paper / Cardboard</option>
+                            <option value="Glass">Glass</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+                            <input type="number" id="weight" step="0.1" class="w-full p-3 rounded-lg border bg-gray-50 focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Price/kg (TND)</label>
+                            <input type="number" id="price" value="2.5" step="0.1" class="w-full p-3 rounded-lg border bg-gray-50 focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                    </div>
+                    <button onclick="declareTransaction()" class="w-full bg-black text-white py-3 rounded-xl hover:bg-gray-800 transition transform active:scale-95">
+                        Validate Transaction
+                    </button>
+                    <p id="transResult" class="text-center text-sm font-medium mt-2"></p>
+                </div>
+            </div>
+
+            <!-- History -->
+            <div class="glass-card p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">Recent History</h3>
+                    <button onclick="getHistory()" class="text-green-600 hover:underline text-sm"><i class="fas fa-sync"></i> Refresh</button>
+                </div>
+                <div id="historyResult" class="space-y-3 max-h-64 overflow-y-auto pr-2">
+                    <div class="text-center text-gray-400 py-4">No recent transactions</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="bg-gray-900 text-white py-12">
+    <div class="container mx-auto px-6 text-center">
+        <h2 class="text-2xl font-bold mb-4">
+            <i class="fas fa-recycle mr-2"></i> EcoCycle
+        </h2>
+        <p class="text-gray-400 mb-8">
+            Made with passion for a sustainable future.
+        </p>
+        <div class="border-t border-gray-800 pt-8 text-sm text-gray-500">
+            © 2024 EcoCycle Platform. All rights reserved.
+        </div>
+    </div>
+</footer>
+
+    <!-- MODALS -->
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 z-[100] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeModal('loginModal')"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="mt-3 text-center sm:mt-0 sm:text-left">
+                        <h3 class="text-2xl leading-6 font-bold text-gray-900 mb-4" id="modal-title">Login</h3>
+                        <div class="mt-2 space-y-4">
+                            <input type="text" id="loginUsername" placeholder="Username" class="w-full p-3 rounded-lg border focus:ring-2 focus:ring-green-500 outline-none">
+                            <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3 rounded-lg border focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <p id="loginResult" class="text-red-500 text-sm mt-2 font-medium text-center"></p>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button onclick="login()" type="button" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        Log In
+                    </button>
+                    <button onclick="closeModal('loginModal')" type="button" class="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="fixed inset-0 z-[100] hidden overflow-y-auto">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeModal('registerModal')"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Create Account</h3>
+                    <div class="space-y-4">
+                        <input type="text" id="regUsername" placeholder="Username" class="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="text" id="regFullname" placeholder="Full Name" class="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="text" id="regPhone" placeholder="Phone Number" class="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="password" id="regPassword" placeholder="Password" class="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <p id="regResult" class="text-green-600 text-sm mt-2 font-medium text-center"></p>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button onclick="register()" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        Sign Up
+                    </button>
+                    <button onclick="closeModal('registerModal')" class="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+        // --- CONSTANTS ---
+        const API_URL = "http://localhost:8000";
+        let token = localStorage.getItem("token") || "";
+
+        // --- UI UTILS ---
+        function openModal(id) {
+            document.getElementById(id).classList.remove("hidden");
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.add("hidden");
+        }
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({behavior: "smooth"});
+        }
+        function toggleLoader(show) {
+            const loader = document.getElementById("searchLoader");
+            if(loader) loader.style.display = show ? "block" : "none";
+        }
+
+        // --- AUTH CHECK ---
+        function checkState() {
+            const dashboardLocked = document.getElementById("dashboardLocked");
+            const dashboardUnlocked = document.getElementById("dashboardUnlocked");
+            const userProfileNav = document.getElementById("userProfileNav");
+            const loginBtnNav = document.getElementById("loginBtnNav");
+            const heroRegisterBtn = document.getElementById("heroRegisterBtn");
+
+            if(token) {
+                // Logged In
+                dashboardLocked.classList.add("hidden");
+                dashboardUnlocked.classList.remove("hidden");
+                userProfileNav.classList.remove("hidden");
+                loginBtnNav.classList.add("hidden");
+                if(heroRegisterBtn) heroRegisterBtn.style.display = "none";
+
+                // Decode token roughly to get username (or fetch profile)
+                // For this demo, we assume the user is stored or just show "Collector"
+                document.getElementById("navUsername").innerText = "Collector";
+                
+                // Load history automatically
+                getHistory();
+            } else {
+                // Logged Out
+                dashboardLocked.classList.remove("hidden");
+                dashboardUnlocked.classList.add("hidden");
+                userProfileNav.classList.add("hidden");
+                loginBtnNav.classList.remove("hidden");
+                if(heroRegisterBtn) heroRegisterBtn.style.display = "flex";
+            }
+        }
+        
+        // --- API FUNCTIONS ---
+
+        async function register() {
+            const btn = document.querySelector("#registerModal button");
+            const originalText = btn.innerText;
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+
+            const u = document.getElementById("regUsername").value;
+            const f = document.getElementById("regFullname").value;
+            const p = document.getElementById("regPhone").value;
+            const pwd = document.getElementById("regPassword").value;
+
+            try {
+                const res = await fetch(`${API_URL}/collectors/`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ username: u, full_name: f, phone_number: p, password: pwd })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById("regResult").innerText = "Success! Please log in now.";
+                    document.getElementById("regResult").className = "text-green-600 text-sm mt-2";
+                    setTimeout(() => {
+                        closeModal("registerModal");
+                        openModal("loginModal");
+                    }, 1500);
+                } else {
+                    const err = await res.json();
+                    document.getElementById("regResult").innerText = "Error: " + (err.detail || "Unknown");
+                    document.getElementById("regResult").className = "text-red-500 text-sm mt-2";
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById("regResult").innerText = "Connection error to server.";
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function login() {
+            const u = document.getElementById("loginUsername").value;
+            const p = document.getElementById("loginPassword").value;
+            const resField = document.getElementById("loginResult");
+
+            const params = new URLSearchParams();
+            params.append("username", u);
+            params.append("password", p);
+
+            try {
+                const res = await fetch(`${API_URL}/token`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/x-www-form-urlencoded"},
+                    body: params
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    token = data.access_token;
+                    localStorage.setItem("token", token);
+                    resField.innerText = "";
+                    closeModal("loginModal");
+                    checkState();
+                    alert("Welcome!");
+                } else {
+                    resField.innerText = "Incorrect credentials";
+                }
+            } catch (e) {
+                console.error(e);
+                resField.innerText = "Server unreachable";
+            }
+        }
+
+        function logout() {
+            token = "";
+            localStorage.removeItem("token");
+            checkState();
+            window.location.reload();
+        }
+
+        async function declareTransaction() {
+            if (!token) return alert("Please log in!");
+            
+            const mat = document.getElementById("material").value;
+            const w = document.getElementById("weight").value;
+            const pr = document.getElementById("price").value;
+            const resField = document.getElementById("transResult");
+
+            try {
+                const res = await fetch(`${API_URL}/collectors/transaction`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ material_type: mat, weight: parseFloat(w), price_per_kg: parseFloat(pr) })
+                });
+                if(res.ok) {
+                    const data = await res.json();
+                    resField.innerText = "Transaction validated! New balance: " + data.new_balance + " TND";
+                    resField.className = "text-green-600 text-center font-bold mt-2";
+                    document.getElementById("dashBalance").innerText = data.new_balance + " TND";
+                    getHistory(); // Refresh history
+                } else {
+                    resField.innerText = "Error during transaction";
+                    resField.className = "text-red-500 text-center mt-2";
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function getHistory() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${API_URL}/collectors/history`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const container = document.getElementById("historyResult");
+                    if(data.length === 0) {
+                        container.innerHTML = "<div class=\"text-center text-gray-400\">No recent transactions</div>";
+                        return;
+                    }
+                    container.innerHTML = data.map(t => `
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-gray-800">${t.material}</p>
+                                    <p class="text-xs text-gray-500">${new Date(t.timestamp).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-green-600">+${t.amount} TND</p>
+                                <p class="text-xs text-gray-400">${t.weight} kg</p>
+                            </div>
+                        </div>
+                    `).join("");
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function search() {
+            const q = document.getElementById("searchItem").value;
+            const resDiv = document.getElementById("searchResult");
+            
+            if(!q) return;
+
+            toggleLoader(true);
+            resDiv.classList.add("hidden");
+
+            try {
+                // Simulate delay for effect
+                await new Promise(r => setTimeout(r, 800)); 
+                
+                const res = await fetch(`${API_URL}/citizen/search?item=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                
+                toggleLoader(false);
+                resDiv.classList.remove("hidden");
+                
+                resDiv.innerHTML = `
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-green-500 mt-1 mr-3"></i>
+                        <div>
+                            <h4 class="font-bold text-lg">Result for "${data.item}"</h4>
+                            <p class="mt-1">${data.sorting_guide}</p>
+                            <p class="mt-2 text-sm text-green-700 bg-green-100 inline-block px-2 py-1 rounded">Category: ${data.category}</p>
+                        </div>
+                    </div>
+                `;
+            } catch(e) {
+                toggleLoader(false);
+                console.error(e);
+            }
+        }
+
+        async function findDropOff() {
+            const lat = document.getElementById("lat").value;
+            const lon = document.getElementById("lon").value;
+            const resDiv = document.getElementById("dropOffResult");
+
+            try {
+                const res = await fetch(`${API_URL}/citizen/optimize-route?lat=${lat}&lon=${lon}`);
+                const data = await res.json();
+                
+                resDiv.innerHTML = data.route.map((point, index) => `
+                    <div class="flex items-center p-3 border border-gray-100 rounded-lg bg-white shadow-sm">
+                        <div class="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center font-bold mr-3">
+                            ${index + 1}
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800">${point.name}</p>
+                            <p class="text-xs text-gray-500">Lat: ${point.location.lat}, Lon: ${point.location.lon}</p>
+                        </div>
+                    </div>
+                `).join("");
+            } catch(e) { console.error(e); }
+        }
+
+        // --- INIT ---
+        window.onload = checkState;
+    </script>
+
+</body>
+</html>
