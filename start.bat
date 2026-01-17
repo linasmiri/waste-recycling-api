@@ -65,7 +65,7 @@ if errorlevel 1 (
 )
 
 echo Installing dependencies...
-pip install -r requirements.txt
+venv\Scripts\python.exe -m pip install -r requirements.txt
 if errorlevel 1 (
     echo Failed to install dependencies.
     pause
@@ -78,5 +78,5 @@ echo Open http://localhost:8000/docs for Swagger UI
 echo Open frontend/index.html for the Interface
 echo.
 start http://localhost:8000/docs
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 pause

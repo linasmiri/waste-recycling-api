@@ -49,6 +49,7 @@
         .nav-link:hover::after { width: 100%; }
         .gradient-text {
             background: linear-gradient(to right, #10B981, #3B82F6);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -129,14 +130,13 @@
         </p>
 
         <div class="flex flex-col md:flex-row justify-center gap-4">
-            <button onclick="scrollToSection('citizen-section')"
-                class="bg-white text-green-600 px-8 py-4 rounded-full font-bold hover:bg-gray-100">
-                <i class="fas fa-search"></i> I am a Citizen
-            </button>
-
             <button onclick="openModal('registerModal')" id="heroRegisterBtn"
-                class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-full font-bold">
-                <i class="fas fa-user-plus"></i> Join the Collectors
+                class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-12 py-4 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition duration-300">
+                <i class="fas fa-user-plus mr-2"></i> Register Now
+            </button>
+            <button onclick="openModal('loginModal')" 
+                class="bg-white text-green-700 px-12 py-4 rounded-full font-bold text-lg shadow-md hover:bg-gray-50 transition duration-300 border border-gray-100">
+                <i class="fas fa-sign-in-alt mr-2"></i> Login
             </button>
         </div>
     </div>
@@ -294,7 +294,7 @@
             <i class="fas fa-recycle mr-2"></i> EcoCycle
         </h2>
         <p class="text-gray-400 mb-8">
-            Made with passion for a sustainable future.
+            Made by Lina Smiri
         </p>
         <div class="border-t border-gray-800 pt-8 text-sm text-gray-500">
             © 2024 EcoCycle Platform. All rights reserved.
@@ -342,8 +342,29 @@
                     <div class="space-y-4">
                         <input type="text" id="regUsername" placeholder="Username" class="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none">
                         <input type="text" id="regFullname" placeholder="Full Name" class="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none">
-                        <input type="text" id="regPhone" placeholder="Phone Number" class="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none">
+                        
+                        <div class="relative">
+                            <span class="absolute left-3 top-3 text-gray-500 border-r pr-2">+216</span>
+                            <input type="tel" id="regPhone" placeholder="12345678" maxlength="8" class="w-full p-3 pl-16 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+
                         <input type="password" id="regPassword" placeholder="Password" class="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none">
+                        
+                        <!-- New Fields -->
+                        <div class="flex space-x-4">
+                            <div class="w-1/2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                                <select id="regRole" class="w-full p-3 rounded-lg border bg-gray-50 outline-none">
+                                    <option value="collector">Barbecha (Collector)</option>
+                                    <option value="citizen">Citizen</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Profile Image</label>
+                                <input type="file" id="regImage" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            </div>
+                        </div>
                     </div>
                     <p id="regResult" class="text-green-600 text-sm mt-2 font-medium text-center"></p>
                 </div>
@@ -397,10 +418,12 @@
 
                 // Decode token roughly to get username (or fetch profile)
                 // For this demo, we assume the user is stored or just show "Collector"
-                document.getElementById("navUsername").innerText = "Collector";
+                // document.getElementById("navUsername").innerText = "Collector";
                 
                 // Load history automatically
                 getHistory();
+                fetchProfile();
+                loadRecyclableItems();
             } else {
                 // Logged Out
                 dashboardLocked.classList.remove("hidden");
@@ -413,39 +436,90 @@
         
         // --- API FUNCTIONS ---
 
+        async function fetchProfile() {
+            if(!token) return;
+            try {
+                const res = await fetch(`${API_URL}/collectors/me`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if(res.ok) {
+                    const user = await res.json();
+                    const nameEl = document.getElementById("navUsername");
+                    if(nameEl) nameEl.innerText = user.full_name || user.username;
+                    
+                    const bal = document.getElementById("dashBalance");
+                    if(bal) bal.innerText = (user.balance || 0) + " TND";
+                }
+            } catch(e) { console.error(e); }
+        }
+
         async function register() {
             const btn = document.querySelector("#registerModal button");
             const originalText = btn.innerText;
-            btn.innerText = "Processing...";
-            btn.disabled = true;
+            const resField = document.getElementById("regResult");
 
+            // --- Validation Tunisienne ---
             const u = document.getElementById("regUsername").value;
             const f = document.getElementById("regFullname").value;
-            const p = document.getElementById("regPhone").value;
+            let p_raw = document.getElementById("regPhone").value;
             const pwd = document.getElementById("regPassword").value;
+            const role = document.getElementById("regRole").value;
+            const fileInput = document.getElementById("regImage");
+
+            // 1. Check Empty
+            if (!u || !f || !p_raw || !pwd) {
+                resField.innerText = "Please fill in all fields.";
+                resField.className = "text-red-500 text-sm mt-2 font-bold";
+                return;
+            }
+
+            // 2. Validate Phone (8 digits)
+            const phoneRegex = /^[0-9]{8}$/;
+            if (!phoneRegex.test(p_raw)) {
+                resField.innerText = "Invalid phone number. Must be 8 digits (e.g. 55123456).";
+                resField.className = "text-red-500 text-sm mt-2 font-bold";
+                return;
+            }
+
+            // Prep Data (+216 prefix)
+            const fullPhone = "+216" + p_raw;
+
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+            resField.innerText = "";
+
+            const formData = new FormData();
+            formData.append("username", u);
+            formData.append("full_name", f);
+            formData.append("phone_number", fullPhone);
+            formData.append("password", pwd);
+            formData.append("role", role);
+            if (fileInput.files[0]) {
+                formData.append("file", fileInput.files[0]);
+            }
 
             try {
-                const res = await fetch(`${API_URL}/collectors/`, {
+                const res = await fetch(`${API_URL}/collectors/register`, {
                     method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ username: u, full_name: f, phone_number: p, password: pwd })
+                    body: formData 
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    document.getElementById("regResult").innerText = "Success! Please log in now.";
-                    document.getElementById("regResult").className = "text-green-600 text-sm mt-2";
+                    resField.innerText = "Success! Please log in now.";
+                    resField.className = "text-green-600 text-sm mt-2 font-bold";
                     setTimeout(() => {
                         closeModal("registerModal");
                         openModal("loginModal");
                     }, 1500);
                 } else {
                     const err = await res.json();
-                    document.getElementById("regResult").innerText = "Error: " + (err.detail || "Unknown");
-                    document.getElementById("regResult").className = "text-red-500 text-sm mt-2";
+                    resField.innerText = "Error: " + (err.detail || "Unknown");
+                    resField.className = "text-red-500 text-sm mt-2 font-bold";
                 }
             } catch (e) {
                 console.error(e);
-                document.getElementById("regResult").innerText = "Connection error to server.";
+                resField.innerText = "Connection error to server.";
+                resField.className = "text-red-500 text-sm mt-2 font-bold";
             } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;
@@ -457,24 +531,30 @@
             const p = document.getElementById("loginPassword").value;
             const resField = document.getElementById("loginResult");
 
-            const params = new URLSearchParams();
-            params.append("username", u);
-            params.append("password", p);
-
             try {
-                const res = await fetch(`${API_URL}/token`, {
+                const res = await fetch(`${API_URL}/collectors/login`, {
                     method: "POST",
-                    headers: {"Content-Type": "application/x-www-form-urlencoded"},
-                    body: params
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ username: u, password: p })
                 });
                 if (res.ok) {
                     const data = await res.json();
                     token = data.access_token;
                     localStorage.setItem("token", token);
+                    localStorage.setItem("user", JSON.stringify(data.collector)); // Save user info
                     resField.innerText = "";
                     closeModal("loginModal");
-                    checkState();
-                    alert("Welcome!");
+                    
+                    // Route based on role
+                    const role = data.collector.role;
+                    if (role === "citizen") {
+                        window.location.href = "citizen.html";
+                    } else if (role === "admin") {
+                        window.location.href = "admin.html";
+                    } else {
+                        checkState(); // Valid for collector (current page)
+                    }
+                    alert("Welcome " + data.collector.full_name + "!");
                 } else {
                     resField.innerText = "Incorrect credentials";
                 }
@@ -491,49 +571,82 @@
             window.location.reload();
         }
 
+        async function loadRecyclableItems() {
+            try {
+                const res = await fetch(`${API_URL}/citizen/items`);
+                if(res.ok) {
+                    const items = await res.json();
+                    const select = document.getElementById("material");
+                    if(select) {
+                        select.innerHTML = items.map(i => `<option value="${i.id}" data-price="${i.price_per_kg}">${i.name} (${i.category})</option>`).join("");
+                        
+                        const updatePrice = () => {
+                            const opt = select.options[select.selectedIndex];
+                            if(opt) {
+                                document.getElementById("price").value = opt.getAttribute("data-price");
+                            }
+                        };
+                        select.onchange = updatePrice;
+                        // Initial set
+                        if(items.length > 0) updatePrice();
+                    }
+                }
+            } catch(e) {
+                console.error("Error loading items:", e);
+            }
+        }
+
         async function declareTransaction() {
             if (!token) return alert("Please log in!");
             
-            const mat = document.getElementById("material").value;
+            const itemId = document.getElementById("material").value;
             const w = document.getElementById("weight").value;
-            const pr = document.getElementById("price").value;
+            // distinct request - price is determined by backend based on item_id
             const resField = document.getElementById("transResult");
 
             try {
-                const res = await fetch(`${API_URL}/collectors/transaction`, {
+                const res = await fetch(`${API_URL}/collectors/collections`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         "Authorization": `Bearer ${token}`
                     },
-                    body: JSON.stringify({ material_type: mat, weight: parseFloat(w), price_per_kg: parseFloat(pr) })
+                    body: JSON.stringify({ 
+                        item_id: parseInt(itemId), 
+                        weight_kg: parseFloat(w),
+                        location: "Depot", // Default or add input
+                        notes: "Web Submission"
+                    })
                 });
                 if(res.ok) {
                     const data = await res.json();
-                    resField.innerText = "Transaction validated! New balance: " + data.new_balance + " TND";
+                    resField.innerText = "Collection recorded! Earned: " + data.earned_amount + " TND";
                     resField.className = "text-green-600 text-center font-bold mt-2";
-                    document.getElementById("dashBalance").innerText = data.new_balance + " TND";
+                    // Update balance display if available in response or fetch profile
+                     fetchProfile(); 
                     getHistory(); // Refresh history
                 } else {
-                    resField.innerText = "Error during transaction";
+                    const err = await res.json();
+                    resField.innerText = "Error: " + (err.detail || "Unknown error");
                     resField.className = "text-red-500 text-center mt-2";
                 }
             } catch(e) {
                 console.error(e);
+                resField.innerText = "Connection error";
             }
         }
 
         async function getHistory() {
             if (!token) return;
             try {
-                const res = await fetch(`${API_URL}/collectors/history`, {
+                const res = await fetch(`${API_URL}/collectors/collections`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
                 if (res.ok) {
                     const data = await res.json();
                     const container = document.getElementById("historyResult");
                     if(data.length === 0) {
-                        container.innerHTML = "<div class=\"text-center text-gray-400\">No recent transactions</div>";
+                        container.innerHTML = "<div class=\"text-center text-gray-400\">No recent collections</div>";
                         return;
                     }
                     container.innerHTML = data.map(t => `
@@ -543,18 +656,17 @@
                                     <i class="fas fa-leaf"></i>
                                 </div>
                                 <div>
-                                    <p class="font-bold text-gray-800">${t.material}</p>
-                                    <p class="text-xs text-gray-500">${new Date(t.timestamp).toLocaleDateString()}</p>
+                                    <p class="font-bold text-gray-800">${t.item_name || 'Recycling'}</p>
+                                    <p class="text-xs text-gray-500">${new Date(t.collected_at).toLocaleDateString()} - ${t.weight_kg}kg</p>
                                 </div>
                             </div>
-                            <div class="text-right">
-                                <p class="font-bold text-green-600">+${t.amount} TND</p>
-                                <p class="text-xs text-gray-400">${t.weight} kg</p>
-                            </div>
+                            <span class="font-bold text-green-600">+${t.earned_amount} TND</span>
                         </div>
                     `).join("");
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) {
+                console.error(e);
+            }
         }
 
         async function search() {

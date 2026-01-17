@@ -1,21 +1,31 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List
-from datetime import datetime, timedelta
+from typing import List, Optional
+from datetime import datetime
 from .. import models, schemas
 from ..database import get_db
+from ..auth import get_current_collector
 
 router = APIRouter(
     prefix="/admin",
     tags=["Admin"]
 )
 
-# Note: In production, add proper admin authentication
-# For now, these endpoints are open for testing
+# --- Admin Dependency ---
+def get_current_admin(
+    user: models.Collector = Depends(get_current_collector)
+):
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    return user
 
+# --- Dashboard ---
 @router.get("/dashboard", response_model=schemas.DashboardStats)
-def get_dashboard_stats(db: Session = Depends(get_db)):
+def get_dashboard_stats(
+    db: Session = Depends(get_db),
+    current_admin: models.Collector = Depends(get_current_admin)
+):
     """Get overall system statistics"""
     # Total collectors
     total_collectors = db.query(models.Collector).count()
@@ -71,31 +81,94 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     }
 
 @router.get("/collectors", response_model=List[schemas.CollectorResponse])
-def get_all_collectors(
+def get_all_users(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    role: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_admin: models.Collector = Depends(get_current_admin)
 ):
-    """Get all collectors"""
-    collectors = db.query(models.Collector).offset(skip).limit(limit).all()
-    return collectors
+    """Get all users (collectors, citizens, admins) with optional role filter"""
+    query = db.query(models.Collector)
+    if role:
+        query = query.filter(models.Collector.role == role)
+    return query.offset(skip).limit(limit).all()
 
-@router.get("/collectors/{collector_id}", response_model=schemas.CollectorResponse)
-def get_collector_by_id(collector_id: int, db: Session = Depends(get_db)):
-    """Get specific collector by ID"""
-    collector = db.query(models.Collector).filter(
-        models.Collector.id == collector_id
+@router.get("/collectors/{user_id}", response_model=schemas.CollectorResponse)
+def get_user_by_id(
+    user_id: int, 
+    db: Session = Depends(get_db),
+    current_admin: models.Collector = Depends(get_current_admin)
+):
+    """Get specific user by ID"""
+    user = db.query(models.Collector).filter(
+        models.Collector.id == user_id
     ).first()
     
-    if not collector:
-        raise HTTPException(status_code=404, detail="Collector not found")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     
-    return collector
+    return user
+
+# --- User Management Endpoints ---
+@router.put("/users/{user_id}", response_model=schemas.CollectorResponse)
+def update_user(
+    user_id: int,
+    user_update: schemas.CollectorBase,
+    db: Session = Depends(get_db),
+    current_admin: models.Collector = Depends(get_current_admin)
+):
+    """Admin update user details"""
+    user = db.query(models.Collector).filter(models.Collector.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.username = user_update.username
+    user.full_name = user_update.full_name
+    user.phone_number = user_update.phone_number
+    # Role update could be added here if schemas.CollectorBase had it, or use a specific schema
+    
+    db.commit()
+    db.refresh(user)
+    return user
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_admin: models.Collector = Depends(get_current_admin)
+):
+    """Delete user"""
+    user = db.query(models.Collector).filter(models.Collector.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check for related records if needed, or rely on cascade
+    db.delete(user)
+    db.commit()
+    return None
+
+@router.post("/users/{user_id}/toggle-active", response_model=schemas.CollectorResponse)
+def toggle_user_active(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_admin: models.Collector = Depends(get_current_admin)
+):
+    """Toggle user active status (Ban/Unban)"""
+    user = db.query(models.Collector).filter(models.Collector.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.is_active = not user.is_active
+    db.commit()
+    db.refresh(user)
+    return user
 
 @router.post("/items", response_model=schemas.RecyclableItemResponse, status_code=status.HTTP_201_CREATED)
 def create_recyclable_item(
     item: schemas.RecyclableItemCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: models.Collector = Depends(get_current_admin)
 ):
     """Create a new recyclable item"""
     # Check if item already exists

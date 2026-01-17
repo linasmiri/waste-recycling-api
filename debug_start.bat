@@ -28,7 +28,7 @@ if not exist venv (
 call venv\Scripts\activate
 
 echo 3. Installing dependencies (forcing upgrade)...
-pip install --upgrade --force-reinstall -r requirements.txt
+venv\Scripts\python.exe -m pip install --upgrade --force-reinstall -r requirements.txt
 if %errorlevel% neq 0 (
     echo !!!!!!!!!!!!!!!!
     echo INSTALL FAILED
@@ -40,7 +40,7 @@ if %errorlevel% neq 0 (
 echo 4. Starting Server...echo Opening Swagger UI...
 start http://localhost:8000/docsecho If this crashes, READ THE ERROR MESSAGE BELOW.
 echo ---------------------------------------------------
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 echo ---------------------------------------------------
 echo SERVER EXITED.
 pause

@@ -1,40 +1,69 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List
+from typing import List, Optional
+import shutil
+import os
+import uuid
 from datetime import datetime, timedelta
 from .. import models, schemas
 from ..database import get_db
-from ..auth import (
-    get_password_hash, 
-    authenticate_collector, 
-    create_access_token,
-    get_current_collector
-)
+from ..auth import get_current_collector, get_password_hash
 
 router = APIRouter(
     prefix="/collectors",
     tags=["Collectors"]
 )
 
+# ----------------- Register -----------------
 @router.post("/register", response_model=schemas.CollectorResponse, status_code=status.HTTP_201_CREATED)
-def register_collector(collector: schemas.CollectorCreate, db: Session = Depends(get_db)):
-    """Register a new collector (Barbecha)"""
+def register_collector(
+    username: str = Form(...),
+    full_name: str = Form(...),
+    phone_number: str = Form(...),
+    password: str = Form(...),
+    role: str = Form("collector"),
+    file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db)
+):
+    """Register a new user (Collector, Citizen, etc.) with optional profile image"""
+    from ..auth import get_password_hash
+
     # Check if username exists
     db_collector = db.query(models.Collector).filter(
-        models.Collector.username == collector.username
+        models.Collector.username == username
     ).first()
     
     if db_collector:
         raise HTTPException(status_code=400, detail="Username already registered")
     
+    # Handle Image Upload
+    image_url = None
+    if file:
+        # Create static/images directory if not exists
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "static", "images")
+        if not os.path.exists(static_dir):
+            os.makedirs(static_dir)
+        
+        # Save file
+        file_extension = file.filename.split(".")[-1]
+        filename = f"{uuid.uuid4()}.{file_extension}"
+        file_path = os.path.join(static_dir, filename)
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        image_url = f"/static/images/{filename}"
+
     # Create new collector
-    hashed_password = get_password_hash(collector.password)
+    hashed_password = get_password_hash(password)
     new_collector = models.Collector(
-        username=collector.username,
-        full_name=collector.full_name,
-        phone_number=collector.phone_number,
-        hashed_password=hashed_password
+        username=username,
+        full_name=full_name,
+        phone_number=phone_number,
+        hashed_password=hashed_password,
+        role=role,
+        profile_image=image_url
     )
     
     db.add(new_collector)
@@ -43,9 +72,12 @@ def register_collector(collector: schemas.CollectorCreate, db: Session = Depends
     
     return new_collector
 
+# ----------------- Login -----------------
 @router.post("/login")
 def login_collector(credentials: schemas.CollectorLogin, db: Session = Depends(get_db)):
     """Login collector and return JWT token"""
+    from ..auth import authenticate_collector, create_access_token  # lazy import
+
     collector = authenticate_collector(db, credentials.username, credentials.password)
     
     if not collector:
@@ -64,15 +96,57 @@ def login_collector(credentials: schemas.CollectorLogin, db: Session = Depends(g
             "id": collector.id,
             "username": collector.username,
             "full_name": collector.full_name,
-            "balance": collector.balance
+            "balance": collector.balance,
+            "role": collector.role,
+            "profile_image": collector.profile_image
         }
     }
 
+# ----------------- Current Collector Info & Profile Update -----------------
 @router.get("/me", response_model=schemas.CollectorResponse)
-def get_current_collector_info(current_collector: models.Collector = Depends(get_current_collector)):
-    """Get current collector information"""
+def get_current_collector_info(
+    current_collector: models.Collector = Depends(get_current_collector)
+):
+    """Get current user information"""
     return current_collector
 
+@router.put("/me", response_model=schemas.CollectorResponse)
+def update_profile(
+    full_name: Optional[str] = Form(None),
+    phone_number: Optional[str] = Form(None),
+    password: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    current_collector: models.Collector = Depends(get_current_collector),
+    db: Session = Depends(get_db)
+):
+    """Update current user profile"""
+
+    if full_name:
+        current_collector.full_name = full_name
+    if phone_number:
+        current_collector.phone_number = phone_number
+    if password:
+        current_collector.hashed_password = get_password_hash(password)
+    
+    if file:
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "static", "images")
+        if not os.path.exists(static_dir):
+            os.makedirs(static_dir)
+            
+        file_extension = file.filename.split(".")[-1]
+        filename = f"{uuid.uuid4()}.{file_extension}"
+        file_path = os.path.join(static_dir, filename)
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        current_collector.profile_image = f"/static/images/{filename}"
+    
+    db.commit()
+    db.refresh(current_collector)
+    return current_collector
+
+# ----------------- Collector Stats -----------------
 @router.get("/me/stats", response_model=schemas.CollectorStats)
 def get_collector_stats(
     current_collector: models.Collector = Depends(get_current_collector),
@@ -121,6 +195,7 @@ def get_collector_stats(
         "collections_by_category": collections_by_category
     }
 
+# ----------------- Create Collection -----------------
 @router.post("/collections", response_model=schemas.CollectionResponse, status_code=status.HTTP_201_CREATED)
 def create_collection(
     collection: schemas.CollectionCreate,
@@ -176,6 +251,7 @@ def create_collection(
         "item_category": item.category
     }
 
+# ----------------- Get Collections -----------------
 @router.get("/collections", response_model=List[schemas.CollectionResponse])
 def get_my_collections(
     skip: int = 0,
@@ -212,6 +288,7 @@ def get_my_collections(
     
     return result
 
+# ----------------- Withdraw -----------------
 @router.post("/withdraw", response_model=schemas.TransactionResponse)
 def withdraw_balance(
     withdrawal: schemas.TransactionCreate,
@@ -239,6 +316,7 @@ def withdraw_balance(
     
     return transaction
 
+# ----------------- Transactions -----------------
 @router.get("/transactions", response_model=List[schemas.TransactionResponse])
 def get_transactions(
     skip: int = 0,
